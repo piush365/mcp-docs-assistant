@@ -1,5 +1,5 @@
 import '../lib/load-env';
-import { cloneSdkRepo, listDocFiles, SOURCES } from '../lib/ingest/repo';
+import { cloneRepo, listDocFiles, SOURCES } from '../lib/ingest/repo';
 import { readDocFile } from '../lib/ingest/read';
 import { chunkMarkdown, type Chunk } from '../lib/ingest/chunk';
 import { clearVersion, embedAndStore } from '../lib/ingest/embed-store';
@@ -7,8 +7,8 @@ import { clearVersion, embedAndStore } from '../lib/ingest/embed-store';
 async function main() {
   let total = 0;
   for (const source of SOURCES) {
-    const repoRoot = cloneSdkRepo(source);
-    const files = listDocFiles(repoRoot);
+    const repoRoot = cloneRepo(source);
+    const files = listDocFiles(source);
     console.log(`\n[${source.version}] ${files.length} files @ ${source.gitRef}`);
 
     const chunks: Chunk[] = [];

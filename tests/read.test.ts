@@ -15,9 +15,16 @@ describe('extractTitle', () => {
 });
 
 describe('blobUrl', () => {
-  it('builds a GitHub blob URL from the repo-relative path', () => {
+  it('builds a GitHub blob URL from the repo-relative path (default repo)', () => {
     expect(blobUrl('docs/server.md', 'v1.29.0')).toBe(
       'https://github.com/modelcontextprotocol/typescript-sdk/blob/v1.29.0/docs/server.md',
+    );
+  });
+  it('honors an explicit repo slug (spec lives in a different repo)', () => {
+    expect(
+      blobUrl('docs/specification/2025-11-25/server/tools.mdx', '2025-11-25', 'modelcontextprotocol/modelcontextprotocol'),
+    ).toBe(
+      'https://github.com/modelcontextprotocol/modelcontextprotocol/blob/2025-11-25/docs/specification/2025-11-25/server/tools.mdx',
     );
   });
 });
@@ -31,8 +38,14 @@ describe('readDocFile version-correctness', () => {
 
     const v2: CorpusSource = {
       version: 'v2',
+      source: 'sdk-docs',
+      repo: 'modelcontextprotocol/typescript-sdk',
+      repoUrl: 'https://github.com/modelcontextprotocol/typescript-sdk.git',
       gitRef: '@modelcontextprotocol/server@2.0.0-alpha.2',
       urlRef: 'deadbeef',
+      docsDir: 'docs',
+      fileExts: ['.md'],
+      includeReadme: true,
       cacheDir: repoRoot,
     };
     const doc = readDocFile(abs, repoRoot, v2);
@@ -41,6 +54,36 @@ describe('readDocFile version-correctness', () => {
     expect(doc.source).toBe('sdk-docs');
     expect(doc.url).toBe(
       'https://github.com/modelcontextprotocol/typescript-sdk/blob/deadbeef/docs/server.md',
+    );
+  });
+
+  it('tags spec .mdx chunks as source=spec, pins to the spec repo, and cleans JSX', () => {
+    const repoRoot = mkdtempSync(path.join(tmpdir(), 'mcp-spec-'));
+    const abs = path.join(repoRoot, 'docs', 'specification', '2025-11-25', 'server', 'tools.mdx');
+    mkdirSync(path.dirname(abs), { recursive: true });
+    writeFileSync(abs, '---\ntitle: Tools\n---\n\n<Info>Revision 2025-11-25</Info>\n\nServers expose tools.');
+
+    const spec: CorpusSource = {
+      version: '2025-11-25',
+      source: 'spec',
+      repo: 'modelcontextprotocol/modelcontextprotocol',
+      repoUrl: 'https://github.com/modelcontextprotocol/modelcontextprotocol.git',
+      gitRef: '2025-11-25',
+      urlRef: '2025-11-25',
+      docsDir: 'docs/specification/2025-11-25',
+      fileExts: ['.mdx'],
+      includeReadme: false,
+      cacheDir: repoRoot,
+    };
+    const doc = readDocFile(abs, repoRoot, spec);
+
+    expect(doc.source).toBe('spec');
+    expect(doc.version).toBe('2025-11-25');
+    expect(doc.title).toBe('Tools'); // from frontmatter-stripped H-less file -> uses frontmatter? falls to filename
+    expect(doc.markdown).not.toContain('<Info>');
+    expect(doc.markdown).toContain('Servers expose tools.');
+    expect(doc.url).toBe(
+      'https://github.com/modelcontextprotocol/modelcontextprotocol/blob/2025-11-25/docs/specification/2025-11-25/server/tools.mdx',
     );
   });
 });

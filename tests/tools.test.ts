@@ -21,9 +21,16 @@ function chunk(similarity: number): RetrievedChunk {
   };
 }
 
-// The tool's execute is what the agent invokes.
-const run = (input: { query: string; version?: 'v1' | 'v2' }) =>
-  searchDocs.execute!(input, { toolCallId: 't', messages: [] });
+interface ToolOutput {
+  relevant: boolean;
+  results: Array<{ citation: string; version: string; similarity: number; content: string }>;
+  note?: string;
+}
+
+// The tool's execute is what the agent invokes. Its declared return is a
+// streaming union; this tool always resolves to a plain object, so we narrow.
+const run = async (input: { query: string; version?: 'v1' | 'v2' }): Promise<ToolOutput> =>
+  (await searchDocs.execute!(input, { toolCallId: 't', messages: [] })) as ToolOutput;
 
 describe('searchDocs tool — refusal gate', () => {
   beforeEach(() => searchMock.mockReset());
