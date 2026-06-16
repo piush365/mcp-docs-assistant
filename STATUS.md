@@ -46,7 +46,9 @@ pnpm db:setup && pnpm db:push && pnpm ingest && pnpm test && pnpm ask "how do I 
 
 Plan file: `docs/superpowers/plans/2026-06-15-foundation-ingestion-retrieval.md`
 
-- **Plan 2** — ingest **v2** (`2.0.0-alpha`) at its own git ref tagged `version: 'v2'`; add the protocol-spec corpus (spec site is Mintlify → `.md`-append trick works); agentic layer (`generateText` + `searchDocs` tool, `stopWhen: stepCountIs`); **version-correctness + refusal** (the differentiator); SSE → Streamable HTTP disambiguation; hybrid search + `rerank`.
+- **Plan 2** — _in progress._
+  - ✅ **v2 corpus ingested** — multi-version ingest refactor: `lib/ingest/repo.ts` now exports `SOURCES: CorpusSource[]` (v1 `v1.29.0` + v2 `@modelcontextprotocol/server@2.0.0-alpha.2`, URLs pinned to commit `0021561` since the v2 tag has slashes). `read.ts` tags each chunk from its source; `embed-store.ts` `clearVersion()` makes re-ingest idempotent. **216 chunks** now: 58 v1 + 158 v2 (incl. `migration.md`/`migration-SKILL.md` — the v1→v2 delta). Verified: "register tool" returns mixed [v1]/[v2]; "v1→v2 migration" returns [v2] migration docs. 10/10 tests.
+  - ⏳ Remaining: protocol-spec corpus (spec site is Mintlify → `.md`-append trick); agentic layer (`generateText` + `searchDocs` tool, `stopWhen: stepCountIs`); **version-correctness + refusal** (filter/disambiguate by version, refuse when uncovered); SSE → Streamable HTTP disambiguation; hybrid search + `rerank`.
 - **Plan 3** — chat UI (`useChat` + `DefaultChatTransport` + `toUIMessageStreamResponse`).
 - **Plan 4** — eval harness (golden set mined from the repo's `bug`/`question` issues, tagged v1/v2 + should-refuse) + benchmark vs Context7/DeepWiki.
 - **Plan 5** — deploy + publish the assistant itself as an MCP server to the official registry. Switch to OIDC auth via `vercel env pull`.
@@ -65,7 +67,7 @@ The plan is self-contained (written for an engineer with zero context), so a new
 
 ## Key facts (don't re-derive)
 
-- Pinned SDK ref: **`v1.29.0`** (recent tags use the `v` prefix; verified via `git ls-remote --tags`).
+- Pinned SDK refs: **v1 `v1.29.0`**; **v2 `@modelcontextprotocol/server@2.0.0-alpha.2`** (all alpha.2 package tags peel to monorepo commit `0021561…`, used for v2 blob URLs since the tag name has slashes). Sources defined in `lib/ingest/repo.ts` (`SOURCES`); verified via `git ls-remote --tags`.
 - Embeddings: `gemini-embedding-001` (1536-dim, truncated via `outputDimensionality`) via Google Gemini direct (`@ai-sdk/google`); `embed` / `embedMany` from `ai`. Config centralized in `lib/embed/model.ts`. (Originally `openai/text-embedding-3-small` via Vercel AI Gateway — see provider-pivot note above.)
 - Store: Neon Postgres + pgvector; HNSW `vector_cosine_ops`; similarity = `1 - cosineDistance`.
 - Docs are ingested by **cloning the repo** (the docs site `ts.sdk.modelcontextprotocol.io` is TypeDoc — no `llms.txt`/sitemap, do not scrape). Clone lands in `.cache/mcp-sdk` (gitignored).

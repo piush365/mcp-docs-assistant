@@ -1,10 +1,16 @@
 import { embedMany } from 'ai';
+import { eq } from 'drizzle-orm';
 import { db } from '../db/client';
 import { chunks as chunksTable, type NewChunk } from '../db/schema';
 import { embeddingModel, embedProviderOptions } from '../embed/model';
 import type { Chunk } from './chunk';
 
 const BATCH = 96;
+
+/** Delete all stored chunks for a version, so re-ingesting that version is idempotent. */
+export async function clearVersion(version: string): Promise<void> {
+  await db.delete(chunksTable).where(eq(chunksTable.version, version));
+}
 
 /** Embed chunks and insert them. Returns the number of rows written. */
 export async function embedAndStore(chunks: Chunk[]): Promise<number> {

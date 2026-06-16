@@ -2,9 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
 import type { DocInput } from './chunk';
-import { SDK_GIT_REF } from './repo';
-
-const DOC_VERSION = 'v1';
+import type { CorpusSource } from './repo';
 
 export function extractTitle(markdown: string, fileName: string): string {
   const h1 = markdown.split('\n').find((l) => /^#\s+/.test(l));
@@ -17,17 +15,17 @@ export function blobUrl(relPath: string, ref: string): string {
 }
 
 /** Read a doc file into a DocInput. `repoRoot` is the clone dir; `absPath` the file. */
-export function readDocFile(absPath: string, repoRoot: string): DocInput {
+export function readDocFile(absPath: string, repoRoot: string, source: CorpusSource): DocInput {
   const raw = readFileSync(absPath, 'utf8');
   const { content } = matter(raw); // strips frontmatter if any; MCP docs are usually plain md
   const relPath = path.relative(repoRoot, absPath).split(path.sep).join('/');
   const fileName = path.basename(absPath);
-  const source = fileName === 'README.md' ? 'readme' : 'sdk-docs';
+  const docSource = fileName === 'README.md' ? 'readme' : 'sdk-docs';
   return {
     markdown: content,
     title: extractTitle(content, fileName),
-    url: blobUrl(relPath, SDK_GIT_REF),
-    version: DOC_VERSION,
-    source,
+    url: blobUrl(relPath, source.urlRef),
+    version: source.version,
+    source: docSource,
   };
 }

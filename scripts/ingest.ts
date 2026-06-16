@@ -1,25 +1,33 @@
 import '../lib/load-env';
-import { cloneSdkRepo, listDocFiles, SDK_GIT_REF } from '../lib/ingest/repo';
+import { cloneSdkRepo, listDocFiles, SOURCES } from '../lib/ingest/repo';
 import { readDocFile } from '../lib/ingest/read';
 import { chunkMarkdown, type Chunk } from '../lib/ingest/chunk';
-import { embedAndStore } from '../lib/ingest/embed-store';
+import { clearVersion, embedAndStore } from '../lib/ingest/embed-store';
 
 async function main() {
-  const repoRoot = cloneSdkRepo();
-  const files = listDocFiles(repoRoot);
-  console.log(`Ingesting ${files.length} files from MCP TS SDK @ ${SDK_GIT_REF}`);
+  let total = 0;
+  for (const source of SOURCES) {
+    const repoRoot = cloneSdkRepo(source);
+    const files = listDocFiles(repoRoot);
+    console.log(`\n[${source.version}] ${files.length} files @ ${source.gitRef}`);
 
-  const allChunks: Chunk[] = [];
-  for (const file of files) {
-    const doc = readDocFile(file, repoRoot);
-    const chunks = chunkMarkdown(doc);
-    allChunks.push(...chunks);
-    console.log(`  ${doc.title}: ${chunks.length} chunks`);
+    const chunks: Chunk[] = [];
+    for (const file of files) {
+      const doc = readDocFile(file, repoRoot, source);
+      const docChunks = chunkMarkdown(doc);
+      chunks.push(...docChunks);
+      console.log(`  ${doc.title}: ${docChunks.length} chunks`);
+    }
+
+    // Idempotent: drop this version's rows before re-inserting, so re-running
+    // ingest never duplicates.
+    await clearVersion(source.version);
+    console.log(`[${source.version}] embedding + storing ${chunks.length} chunks...`);
+    const written = await embedAndStore(chunks);
+    total += written;
+    console.log(`[${source.version}] wrote ${written} chunks.`);
   }
-
-  console.log(`Embedding + storing ${allChunks.length} chunks...`);
-  const written = await embedAndStore(allChunks);
-  console.log(`Done. Wrote ${written} chunks.`);
+  console.log(`\nDone. Wrote ${total} chunks across ${SOURCES.length} versions.`);
 }
 
 main().catch((err) => {
