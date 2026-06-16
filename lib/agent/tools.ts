@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { search } from '../retrieve/search';
+import { hybridSearch } from '../retrieve/search';
 import { hasConfidentMatch } from './gate';
 
 /**
@@ -23,7 +23,7 @@ export const searchDocs = tool({
       ),
   }),
   execute: async ({ query, version }) => {
-    const results = await search(query, { version, limit: 6 });
+    const results = await hybridSearch(query, { version, limit: 6 });
     if (!hasConfidentMatch(results)) {
       return {
         relevant: false,

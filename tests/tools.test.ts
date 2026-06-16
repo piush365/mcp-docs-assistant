@@ -4,13 +4,14 @@ import type { RetrievedChunk } from '../lib/retrieve/search';
 // Mock the retrieval layer so the tool's refusal gate is testable without DB/creds.
 const searchMock = vi.fn();
 vi.mock('../lib/retrieve/search', () => ({
-  search: (...args: unknown[]) => searchMock(...args),
+  hybridSearch: (...args: unknown[]) => searchMock(...args),
 }));
 
 const { searchDocs } = await import('../lib/agent/tools');
 
 function chunk(similarity: number): RetrievedChunk {
   return {
+    id: 1,
     content: 'Use registerTool().',
     heading: 'server > Tools',
     url: 'https://example/blob/x/docs/server.md',
