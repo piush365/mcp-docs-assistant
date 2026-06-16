@@ -15,11 +15,13 @@
     "ingest": "tsx scripts/ingest.ts",
     "ask": "tsx scripts/ask.ts",
     "answer": "tsx scripts/answer.ts",
-    "eval": "tsx scripts/eval.ts"
+    "eval": "tsx scripts/eval.ts",
+    "mcp": "tsx mcp-server/index.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.82",
     "@ai-sdk/react": "^3.0.207",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@neondatabase/serverless": "^1.1.0",
     "ai": "^6.0.205",
     "drizzle-orm": "^0.45.2",

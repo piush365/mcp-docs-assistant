@@ -65,7 +65,11 @@ Plan file: `docs/superpowers/plans/2026-06-15-foundation-ingestion-retrieval.md`
   - **Finding → fix (the point of the harness):** first run = **83%** (10/12). Two answerable cases (`prompts`, `resources`) were **false-refused** — but retrieval was fine (top hits 0.70–0.72, well above the 0.45 gate), so the *model* was over-refusing by re-judging relevance itself. Fixed `prompt.ts` rule 3 to **defer refusal to the tool's `relevant` signal** (if `relevant:true`, must answer). Re-ran: **100%** (12/12), refusal accuracy still 100% (moat intact). This improvement is live in the app too.
   - **Tests:** added `eval-metrics` (9). **51/51 unit tests.**
   - ⏳ Optional extension: LLM-as-judge faithfulness (RAGAS-style) + a benchmark table vs Context7/DeepWiki.
-- **Plan 5** — deploy + publish the assistant itself as an MCP server to the official registry. Switch to OIDC auth via `vercel env pull`.
+- **Plan 5** — ✅ **COMPLETE (code).** Publish + deploy + observability.
+  - **MCP server (the meta piece):** `mcp-server/index.ts` publishes the assistant *itself* as an MCP server (stdio) with two tools — `ask_mcp_docs` (full agentic, version-correct, cited answer / refusal) and `search_mcp_docs` (hybrid + rerank → cited chunks, optional `version` filter). Uses `@modelcontextprotocol/sdk@1.29.0` (the v1 we ingested) `McpServer.registerTool`. `lib/load-env.ts` now `quiet: true` so dotenv's tip can't corrupt the stdio JSON-RPC stream; all logs go to stderr. Run: `pnpm mcp`. **Verified** with a real SDK `Client` over stdio: lists both tools, `search_mcp_docs("register a tool", v2)` returns cited [v2] chunks.
+  - **Observability (opt-in):** `agentConfig.experimental_telemetry` emits OpenTelemetry spans for every generation + tool call, gated on `LANGFUSE_PUBLIC_KEY` (no-op until an exporter is registered). Langfuse exporter wiring documented in `DEPLOY.md`.
+  - **Deploy:** `DEPLOY.md` — Vercel (dashboard or CLI), env vars, the one-time `db:setup/push/ingest` seeding note, the Claude Desktop MCP config snippet, and the Langfuse step. Production `next build` clean. (Actual Vercel deploy + secrets are the operator's step.)
+  - **Tests:** 55/55 unit (MCP server verified live via SDK client).
 
 ---
 
